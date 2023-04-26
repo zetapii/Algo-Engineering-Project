@@ -37,33 +37,36 @@ class UnionFind
             return 0;
         if(rnk[px]<rnk[py])
         {
+            // dsuArrayLock.lock();
             par[px]=py;
+            // dsuArrayLock.unlock();
         }
         else if(rnk[px]>rnk[py])
         {
+            // dsuArrayLock.lock();
             par[py]=px;
+            // dsuArrayLock.unlock();
         }
         else 
         {
-            dsuArrayLock.lock();
+            // dsuArrayLock.lock();
             par[px]=py;
             rnk[py]++;
-            dsuArrayLock.unlock();
+            // dsuArrayLock.unlock();
         }
         return 1;
     }
 };
 
 int LG;
-vector< int > depth;
-vector< int > dfsend;
-vector< int > upmerge;
-vector< vector<int> > par;
-vector< vector< pair<int,int> > > tree;
-vector< pair< pair<int,int> ,int> > edges;
-vector< vector< pair<int,int> > > adj;
-vector<int> parentEdgeSpanningTree;
-vector< bool > nontree;
+vector< int > depth;    //depth of nodes
+vector< int > dfsend;   //endtime of nodes
+vector< vector<int> > par;  //2-d vector having parent of nodes in the spanning tree - binary lifting
+vector< vector< pair<int,int> > > tree; //spanning tree
+vector< pair< pair<int,int> ,int> > edges; //edges in the original graph
+vector< vector< pair<int,int> > > adj;  //adjacency list of the original graph
+vector<int> parentEdgeSpanningTree; //parent edge index of the node u in spanning tree
+vector< bool > nontree; //will mark edge index i as tree or non tree
 
 void generateGraph(int n)
 {
@@ -93,11 +96,12 @@ vector<int> dfsorder;
 void generateSpanningTree(int n)
 {
     queue<int> qu;
-    vector<int> vis(n+1,0);
+    vector<bool> vis(n+1,false);
     qu.push(1);
     depth.resize(n+1);
     dfsorder.resize(n+1);
     dfsend.resize(n+1);
+    vis[1]=true;
     while(!qu.empty())
     {
         int cur = qu.front();
@@ -106,6 +110,7 @@ void generateSpanningTree(int n)
         {
             if(!vis[A.first])
             {
+                vis[A.first]=true;
                 tree[cur].push_back(A);
                 nontree[A.second]=false;
                 qu.push(A.first);
@@ -116,6 +121,7 @@ void generateSpanningTree(int n)
             }
         }
     }
+    return ;
 }
 
 void dfsSpanningTree(pair<int,int> node)
@@ -124,56 +130,60 @@ void dfsSpanningTree(pair<int,int> node)
     for(auto A:tree[node.first])
     {
         dfsSpanningTree(A);
-        parentEdgeSpanningTree[A.second]=node.second;
+        parentEdgeSpanningTree[A.first]=A.second;
     }
+    dfsend[node.first]=ptr-1;
     return ;
 }
 
 void initLCA(int n)
 {       
     int lg=log2(n)+1;
-    par.resize(n+1);
+    par.resize(n+3);
+    LG=lg+1;
     for(int i=1;i<=n;i++)
     {
-        par[i].resize(lg+1);
+        par[i].resize(lg+3);
         for(auto A:tree[i])
         {
             par[A.first][0]=i;
         }
     }
-    for(int i=1;i<lg;i++)
+    for(int i=1;i<LG;i++)
     {
         for(int j=1;j<=n;j++)
         {
             par[j][i]=par[par[j][i-1]][i-1];
         }
     }
-    LG=lg;
     return ;
 }
 
-
 int getLCA(int u, int v) 
 {
-    if (dfsorder[u] < depth[v]) 
+    if (depth[u] < depth[v]) 
         swap(u, v);
-    for (int i = LG-1; i >= 0; i--) {
-        if (depth[par[u][i]] >= depth[v]) {
+    for (int i = LG-1; i >= 0; i--) 
+    {
+        if (depth[par[u][i]] >= depth[v]) 
+        {
             u = par[u][i];
         }
     }
-    if (u == v) {
+    if (u == v) 
+    {
         return u;
     }
-    for (int i = LG-1; i >= 0; i--) {
-        if (par[u][i] != par[v][i]) {
+    for (int i = LG-1; i >= 0; i--) 
+    {
+        if (par[u][i] != par[v][i]) 
+        {
             u = par[u][i];
             v = par[v][i];
         }
     }
     return par[u][0];
 }
-
 
 void findBiconnectedComponents(int n)
 {
@@ -185,8 +195,6 @@ void findBiconnectedComponents(int n)
         {
             // check which type of edge is this
             // if(dfsorder[])
-            // lca(u,v)
-            // 
             int u = A.first.first;
             int v = A.first.second;
             int l = getLCA(u,v);
@@ -223,11 +231,11 @@ void findBiconnectedComponents(int n)
         cout<<edges[i].first.first<<" "<<edges[i].first.second<<" "<<dsu.par[edges[i].second]<<" ";
     }
     cout<<endl;
+    return ;
 }
 
 int main()
 {
 
-    
     return 0;
 }
