@@ -61,7 +61,8 @@ class UnionFind
 int LG;
 vector< int > depth;    //depth of nodes
 vector< int > dfsend;   //endtime of nodes
-vector< int > lowTime;
+vector< int > lowTimeMin;
+vector< int > lowTimeMax;
 vector< vector<int> > par;  //2-d vector having parent of nodes in the spanning tree - binary lifting
 vector< vector< pair<int,int> > > tree; //spanning tree
 vector< pair< pair<int,int> ,int> > edges; //edges in the original graph
@@ -136,19 +137,36 @@ void dfsSpanningTree(pair<int,int> node,int hei)
 
 void initLowtime(int n)
 {
+    lowTimeMin.resize(n+1);
+    lowTimeMax.resize(n+1);
     for(int i=1;i<=n;i++)
-        lowTime[i]=dfsorder[i];
+    {
+        lowTimeMin[i]=dfsorder[i];
+        lowTimeMax[i]=dfsorder[i];
+    }
     for(auto A:edges)
     {
-        if(!nontree[A.second])
+        if(nontree[A.second])
         {
             int u = A.first.first;
             int v = A.first.second;
-            if(depth[u]>depth[v])
+            int l = getLCA(u,v);
+            if(l==u or l==v)
             {
-                swap(u,v);
+                if(depth[u]>depth[v])
+                {
+                    swap(u,v);
+                }
+                lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
+                lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
             }
-            lowTime[par[v][0]]=min(lowTime[par[v][0]],dfsorder[u]);
+            else 
+            {
+                lowTimeMin[par[u][0]]=min(lowTimeMin[par[u][0]],dfsorder[v]);
+                lowTimeMax[par[u][0]]=max(lowTimeMax[par[u][0]],dfsorder[v]);
+                lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
+                lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
+            }
         }
     }
     function<void(int)> dfsLowTime = [&](int u) 
@@ -156,8 +174,10 @@ void initLowtime(int n)
         for (auto v : tree[u]) 
         {
             dfsLowTime(v.first);
-            lowTime[u]=min(lowTime[u],lowTime[v.first]);
+            lowTimeMin[u]=min(lowTimeMin[u],lowTimeMin[v.first]);
+            lowTimeMax[u]=max(lowTimeMax[u],lowTimeMax[v.first]);
         }
+ 
     };
     dfsLowTime(1);
     return ;
@@ -284,5 +304,6 @@ int main()
     {
         cout<<i<<" "<<parentEdgeSpanningTree[i]<<" par \n";
     }
+    
     return 0;
 }
