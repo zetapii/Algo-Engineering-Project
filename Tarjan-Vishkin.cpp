@@ -61,6 +61,7 @@ class UnionFind
 int LG;
 vector< int > depth;    //depth of nodes
 vector< int > dfsend;   //endtime of nodes
+vector< int > lowTime;
 vector< vector<int> > par;  //2-d vector having parent of nodes in the spanning tree - binary lifting
 vector< vector< pair<int,int> > > tree; //spanning tree
 vector< pair< pair<int,int> ,int> > edges; //edges in the original graph
@@ -131,6 +132,31 @@ void dfsSpanningTree(pair<int,int> node,int hei)
     }
     dfsend[node.first]=ptr-1;
     return ;
+}
+
+void initLowtime(int n)
+{
+    for(int i=1;i<=n;i++)
+        lowTime[i]=dfsorder[i];
+    for(auto A:edges)
+    {
+        if(!nontree[A.second])
+        {
+            int u = A.first.first;
+            int v = A.first.second;
+            if(depth[u]>depth[v])
+            {
+                swap(u,v);
+            }
+            lowTime[v]=min(lowTime[v],dfsorder[u]);
+        }
+    }
+    function<void(int)> dfs = [&](int u) 
+    {
+        for (int v : tree[u]) 
+        {
+            dfs(v);
+    };
 }
 
 void initLCA(int n)
