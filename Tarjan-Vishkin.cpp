@@ -76,7 +76,7 @@ void generateGraph(int n)
     {
         for(int j=i+1;j<=n;j++)
         {
-            int cur = rand()%2;
+            int cur = rand()%4;
             if(cur == 1)
             {
                 adj[i].push_back({j,edges.size()});
@@ -115,10 +115,6 @@ void generateSpanningTree(int n)
                 nontree[A.second]=false;
                 qu.push(A.first);
             }
-            else 
-            {
-                nontree[A.second]=true;
-            }
         }
     }
     return ;
@@ -142,9 +138,13 @@ void initLCA(int n)
     int lg=log2(n)+1;
     par.resize(n+3);
     LG=lg+1;
-    for(int i=1;i<=n;i++)
+    for(int i=0;i<=n;i++)
     {
         par[i].resize(lg+3);
+    }
+    par[1][0]=0;
+    for(int i=1;i<=n;i++)
+    {
         for(auto A:tree[i])
         {
             par[A.first][0]=i;
@@ -237,6 +237,18 @@ void findBiconnectedComponents(int n)
 
 int main()
 {
-
+    int n = 10;
+    generateGraph(10);
+    for(auto A:edges)
+    {
+        cout<<A.first.first<<" "<<A.first.second<<endl;
+    }
+    generateSpanningTree(n);
+    dfsSpanningTree({1,0},0);
+    initLCA(n);
+    // for(int i=0;i<edges.size();i++)
+    // {
+    //     cout<<" nontree value " <<edges[i].first.first<<" "<<edges[i].first.second<<" "<<nontree[edges[i].second]<<endl;
+    // }
     return 0;
 }
