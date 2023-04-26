@@ -148,15 +148,19 @@ void initLowtime(int n)
             {
                 swap(u,v);
             }
-            lowTime[v]=min(lowTime[v],dfsorder[u]);
+            lowTime[par[v][0]]=min(lowTime[par[v][0]],dfsorder[u]);
         }
     }
-    function<void(int)> dfs = [&](int u) 
+    function<void(int)> dfsLowTime = [&](int u) 
     {
-        for (int v : tree[u]) 
+        for (auto v : tree[u]) 
         {
-            dfs(v);
+            dfsLowTime(v.first);
+            lowTime[u]=min(lowTime[u],lowTime[v.first]);
+        }
     };
+    dfsLowTime(1);
+    return ;
 }
 
 void initLCA(int n)
