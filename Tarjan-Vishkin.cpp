@@ -217,7 +217,7 @@ void findBiconnectedComponents(int n)
             int v = A.first.second;
             if(depth[u]>depth[v])
                 swap(u,v);
-            if(depth[u]==1)
+            if(depth[u]==0)
                 continue;;
             int w = par[u][0];
             if(!(dfsorder[v]<dfsorder[u] && dfsorder[u]<dfsend[v]))
@@ -246,9 +246,13 @@ int main()
     generateSpanningTree(n);
     dfsSpanningTree({1,0},0);
     initLCA(n);
-    // for(int i=0;i<edges.size();i++)
-    // {
-    //     cout<<" nontree value " <<edges[i].first.first<<" "<<edges[i].first.second<<" "<<nontree[edges[i].second]<<endl;
-    // }
+    for(int i=0;i<edges.size();i++)
+    {
+        cout<<" nontree value " <<edges[i].first.first<<" "<<edges[i].first.second<<" "<<nontree[edges[i].second]<<endl;
+    }
+    for(int i=1;i<=n;i++)
+    {
+        cout<<i<<" "<<parentEdgeSpanningTree[i]<<" par \n";
+    }
     return 0;
 }
