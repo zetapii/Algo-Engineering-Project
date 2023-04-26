@@ -124,12 +124,13 @@ void generateSpanningTree(int n)
     return ;
 }
 
-void dfsSpanningTree(pair<int,int> node)
+void dfsSpanningTree(pair<int,int> node,int hei)
 {
+    depth[node.first]=hei;
     dfsorder[node.first]=ptr++;
     for(auto A:tree[node.first])
     {
-        dfsSpanningTree(A);
+        dfsSpanningTree(A,hei+1);
         parentEdgeSpanningTree[A.first]=A.second;
     }
     dfsend[node.first]=ptr-1;
