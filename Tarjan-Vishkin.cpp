@@ -278,7 +278,7 @@ void findBiconnectedComponents(int n)
             if(depth[u]==0)
                 continue;;
             int w = par[u][0];
-            if(!(dfsorder[v]<=lowTimeMin[u] && lowTimeMax[u]<=dfsend[v]))
+            if(!(dfsorder[u]<=lowTimeMin[v] && lowTimeMax[v]<=dfsend[u]))
             {
                 dsu.merge(parentEdgeSpanningTree[v],parentEdgeSpanningTree[u]);
             }
