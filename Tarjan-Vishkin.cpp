@@ -135,54 +135,6 @@ void dfsSpanningTree(pair<int,int> node,int hei)
     return ;
 }
 
-void initLowtime(int n)
-{
-    lowTimeMin.resize(n+1);
-    lowTimeMax.resize(n+1);
-    for(int i=1;i<=n;i++)
-    {
-        lowTimeMin[i]=dfsorder[i];
-        lowTimeMax[i]=dfsorder[i];
-    }
-    for(auto A:edges)
-    {
-        if(nontree[A.second])
-        {
-            int u = A.first.first;
-            int v = A.first.second;
-            int l = getLCA(u,v);
-            if(l==u or l==v)
-            {
-                if(depth[u]>depth[v])
-                {
-                    swap(u,v);
-                }
-                lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
-                lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
-            }
-            else 
-            {
-                lowTimeMin[par[u][0]]=min(lowTimeMin[par[u][0]],dfsorder[v]);
-                lowTimeMax[par[u][0]]=max(lowTimeMax[par[u][0]],dfsorder[v]);
-                lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
-                lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
-            }
-        }
-    }
-    function<void(int)> dfsLowTime = [&](int u) 
-    {
-        for (auto v : tree[u]) 
-        {
-            dfsLowTime(v.first);
-            lowTimeMin[u]=min(lowTimeMin[u],lowTimeMin[v.first]);
-            lowTimeMax[u]=max(lowTimeMax[u],lowTimeMax[v.first]);
-        }
- 
-    };
-    dfsLowTime(1);
-    return ;
-}
-
 void initLCA(int n)
 {       
     int lg=log2(n)+1;
@@ -236,6 +188,62 @@ int getLCA(int u, int v)
     return par[u][0];
 }
 
+
+void initLowtime(int n)
+{
+    lowTimeMin.resize(n+1);
+    lowTimeMax.resize(n+1);
+    for(int i=1;i<=n;i++)
+    {
+        lowTimeMin[i]=dfsorder[i];
+        lowTimeMax[i]=dfsorder[i];
+    }
+    for(auto A:edges)
+    {
+        if(nontree[A.second])
+        {
+            int u = A.first.first;
+            int v = A.first.second;
+            int l = getLCA(u,v);
+            if(l==u or l==v)
+            {
+                if(depth[u]>depth[v])
+                {
+                    swap(u,v);
+                }
+                // lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
+                // lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
+                lowTimeMin[v]=min(lowTimeMin[v],dfsorder[u]);
+                lowTimeMax[v]=max(lowTimeMax[v],dfsorder[u]);
+            }
+            else 
+            {
+                // lowTimeMin[par[u][0]]=min(lowTimeMin[par[u][0]],dfsorder[v]);
+                // lowTimeMax[par[u][0]]=max(lowTimeMax[par[u][0]],dfsorder[v]);
+                // lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
+                // lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
+                lowTimeMin[u]=min(lowTimeMin[u],dfsorder[v]);
+                lowTimeMax[u]=max(lowTimeMax[u],dfsorder[v]);
+                lowTimeMin[v]=min(lowTimeMin[v],dfsorder[u]);
+                lowTimeMax[v]=max(lowTimeMax[v],dfsorder[u]);
+
+            }
+        }
+    }
+    function<void(int)> dfsLowTime = [&](int u) 
+    {
+        for (auto v : tree[u]) 
+        {
+            dfsLowTime(v.first);
+            lowTimeMin[u]=min(lowTimeMin[u],lowTimeMin[v.first]);
+            lowTimeMax[u]=max(lowTimeMax[u],lowTimeMax[v.first]);
+        }
+ 
+    };
+    dfsLowTime(1);
+    return ;
+}
+
 void findBiconnectedComponents(int n)
 {
     UnionFind dsu;
@@ -270,7 +278,7 @@ void findBiconnectedComponents(int n)
             if(depth[u]==0)
                 continue;;
             int w = par[u][0];
-            if(!(dfsorder[v]<dfsorder[u] && dfsorder[u]<dfsend[v]))
+            if(!(dfsorder[v]<=lowTimeMin[u] && lowTimeMax[u]<=dfsend[v]))
             {
                 dsu.merge(A.second,parentEdgeSpanningTree[u]);
             }
@@ -289,21 +297,33 @@ int main()
 {
     int n = 10;
     generateGraph(10);
-    for(auto A:edges)
-    {
-        cout<<A.first.first<<" "<<A.first.second<<endl;
-    }
+    // for(auto A:edges)
+    // {
+    //     cout<<A.first.first<<" "<<A.first.second<<endl;
+    // }
     generateSpanningTree(n);
     dfsSpanningTree({1,0},0);
     initLCA(n);
-    for(int i=0;i<edges.size();i++)
-    {
-        cout<<" nontree value " <<edges[i].first.first<<" "<<edges[i].first.second<<" "<<nontree[edges[i].second]<<endl;
-    }
-    for(int i=1;i<=n;i++)
-    {
-        cout<<i<<" "<<parentEdgeSpanningTree[i]<<" par \n";
-    }
+    initLowtime(n);
+    // for(auto A:edges)
+    // {
+    //     if(nontree[A.second])
+    //     {
+    //         cout<<A.first.first<<" non tree "<<A.first.second<<endl;
+    //     }
+    // }
+    // for(int i=1;i<=n;i++)
+    // {
+    //     cout<<i<<" low time min "<<" "<<dfsorder[i]<<" "<<lowTimeMin[i]<<endl;
+    // }
     
+    // for(int i=0;i<edges.size();i++)
+    // {
+    //     cout<<" nontree value " <<edges[i].first.first<<" "<<edges[i].first.second<<" "<<nontree[edges[i].second]<<endl;
+    // }
+    // for(int i=1;i<=n;i++)
+    // {
+    //     cout<<i<<" "<<parentEdgeSpanningTree[i]<<" par \n";
+    // }   
     return 0;
 }
