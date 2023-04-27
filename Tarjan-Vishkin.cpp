@@ -14,7 +14,7 @@ class UnionFind
         rnk.resize(n+1);
         for(int i=0;i<=n;i++)
         {
-            par[i]=0;
+            par[i]=i;
             rnk[i]=0;
         }
     }
@@ -70,6 +70,48 @@ vector< vector< pair<int,int> > > adj;  //adjacency list of the original graph
 vector<int> parentEdgeSpanningTree; //parent edge index of the node u in spanning tree
 vector< bool > nontree; //will mark edge index i as tree or non tree
 
+int maps[20][20];
+
+void initmap()
+{
+    //tree edges
+    maps[1][11]=1;
+    maps[11][1]=1;
+    maps[11][6]=1;
+    maps[6][11]=1;
+    maps[6][10]=1;
+    maps[10][6]=1;
+    maps[6][7]=1;
+    maps[7][6]=1;
+    maps[7][5]=1;
+    maps[5][7]=1;
+    maps[5][9]=1;
+    maps[9][5]=1;
+    maps[5][3]=1;
+    maps[3][5]=1;
+    maps[3][4]=1;
+    maps[4][3]=1;
+    maps[4][12]=1;
+    maps[12][4]=1;
+    maps[12][8]=1;
+    maps[8][12]=1;
+    maps[8][2]=1;
+    maps[2][8]=1;
+
+    //back edges
+    maps[1][10]=1;
+    maps[10][1]=1;
+    maps[6][5]=1;
+    maps[5][6]=1;
+    maps[1][9]=1;
+    maps[9][1]=1;
+    maps[6][4]=1;
+    maps[4][6]=1;
+    maps[4][2]=1;
+    maps[2][4]=1;
+    return ;
+}
+
 void generateGraph(int n)
 {
     adj.resize(n+1);
@@ -79,7 +121,7 @@ void generateGraph(int n)
         for(int j=i+1;j<=n;j++)
         {
             int cur = rand()%4;
-            if(cur == 1)
+            if(maps[i][j] == 1)
             {
                 adj[i].push_back({j,edges.size()});
                 adj[j].push_back({i,edges.size()});
@@ -266,6 +308,10 @@ void findBiconnectedComponents(int n)
             else 
             {
                 dsu.merge(parentEdgeSpanningTree[u],parentEdgeSpanningTree[v]);
+                if(dfsorder[u]>dfsorder[v])
+                    dsu.merge(parentEdgeSpanningTree[u],A.second);
+                else 
+                    dsu.merge(parentEdgeSpanningTree[v],A.second);
             }
         }
         else 
@@ -287,7 +333,7 @@ void findBiconnectedComponents(int n)
     cout<<"Biconnected Components are :\n";
     for(int i=0;i<edges.size();i++)
     {
-        cout<<edges[i].first.first<<" "<<edges[i].first.second<<" "<<dsu.par[edges[i].second]<<" ";
+        cout<<edges[i].first.first<<" "<<edges[i].first.second<<" "<<dsu.par[edges[i].second]<<"\n";
     }
     cout<<endl;
     return ;
@@ -295,8 +341,9 @@ void findBiconnectedComponents(int n)
 
 int main()
 {
-    int n = 10;
-    generateGraph(10);
+    initmap();
+    int n = 12;
+    generateGraph(n);
     // for(auto A:edges)
     // {
     //     cout<<A.first.first<<" "<<A.first.second<<endl;
@@ -305,13 +352,21 @@ int main()
     dfsSpanningTree({1,0},0);
     initLCA(n);
     initLowtime(n);
-    // for(auto A:edges)
-    // {
-    //     if(nontree[A.second])
-    //     {
-    //         cout<<A.first.first<<" non tree "<<A.first.second<<endl;
-    //     }
-    // }
+    findBiconnectedComponents(n);
+    for(int i=1;i<=n;i++)
+    {
+        for(auto B:tree[i])
+        {
+            cout<< " tree edge "<<" "<<i<<" "<<B.first<<endl;
+        }
+    }
+    for(auto A:edges)
+    {
+        if(nontree[A.second])
+        {
+            cout<<A.first.first<<" non tree "<<A.first.second<<endl;
+        }
+    }
     // for(int i=1;i<=n;i++)
     // {
     //     cout<<i<<" low time min "<<" "<<dfsorder[i]<<" "<<lowTimeMin[i]<<endl;
