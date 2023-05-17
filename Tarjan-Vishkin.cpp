@@ -1,8 +1,8 @@
 #include "bits/stdc++.h"
 using namespace std;
 
+mutex check;
 mutex dsuArrayLock;
-mutex dsuArrayLockComponents[28000000];
 
 class UnionFind 
 {
@@ -11,6 +11,7 @@ class UnionFind
     vector<int> rnk;
     void init(int n)
     {
+
         par.resize(n+1);
         rnk.resize(n+1);
         for(int i=0;i<=n;i++)
@@ -36,39 +37,20 @@ class UnionFind
         int py = get(y);
         if(px==py)
             return 0;
-        std::lock(dsuArrayLockComponents[px], dsuArrayLockComponents[py]);
-        // dsuArrayLock.unlock();
-        px = get(x);
-        py = get(y);
-        if(px==py)
-        {
-            dsuArrayLockComponents[px].unlock();
-            dsuArrayLockComponents[py].unlock();
-            return 0;
-        }
         if(rnk[px]<rnk[py])
         {
-            // dsuArrayLock.lock();
             par[px]=py;
-            // dsuArrayLock.unlock();
         }
         else if(rnk[px]>rnk[py])
 
         {
-            // dsuArrayLock.lock();
             par[py]=px;
-            // dsuArrayLock.unlock();
         }
         else 
         {
-            // dsuArrayLock.lock();
             par[px]=py;
             rnk[py]++;
-            // dsuArrayLock.unlock();
         }
-        dsuArrayLockComponents[px].unlock();
-        dsuArrayLockComponents[py].unlock();
-        // dsuArrayLock.unlock();
         return 1;
     }
 };
@@ -78,6 +60,7 @@ vector< int > depth;    //depth of nodes
 vector< int > dfsend;   //endtime of nodes
 vector< int > lowTimeMin;
 vector< int > lowTimeMax;
+vector< int>  lcaStore;
 vector< vector<int> > par;  //2-d vector having parent of nodes in the spanning tree - binary lifting
 vector< vector< pair<int,int> > > tree; //spanning tree
 vector< pair< pair<int,int> ,int> > edges; //edges in the original graph
@@ -85,66 +68,22 @@ vector< vector< pair<int,int> > > adj;  //adjacency list of the original graph
 vector<int> parentEdgeSpanningTree; //parent edge index of the node u in spanning tree
 vector< bool > nontree; //will mark edge index i as tree or non tree
 
-int maps[20][20];
-
-void initmap()
-{
-    //tree edges
-    maps[1][11]=1;
-    maps[11][1]=1;
-    maps[11][6]=1;
-    maps[6][11]=1;
-    maps[6][10]=1;
-    maps[10][6]=1;
-    maps[6][7]=1;
-    maps[7][6]=1;
-    maps[7][5]=1;
-    maps[5][7]=1;
-    maps[5][9]=1;
-    maps[9][5]=1;
-    maps[5][3]=1;
-    maps[3][5]=1;
-    maps[3][4]=1;
-    maps[4][3]=1;
-    maps[4][12]=1;
-    maps[12][4]=1;
-    maps[12][8]=1;
-    maps[8][12]=1;
-    maps[8][2]=1;
-    maps[2][8]=1;
-
-    //back edges
-    maps[1][10]=1;
-    maps[10][1]=1;
-    maps[6][5]=1;
-    maps[5][6]=1;
-    maps[1][9]=1;
-    maps[9][1]=1;
-    maps[6][4]=1;
-    maps[4][6]=1;
-    maps[4][2]=1;
-    maps[2][4]=1;
-    return ;
-}
-
 void generateGraph(int n)
 {
     adj.resize(n+1);
     tree.resize(n+1);
-    for(int i=1;i<=n;i++)
+    int m;
+    cin>>m;
+    int x,y;
+    for(int i=1;i<=m;i++)
     {
-        for(int j=i+1;j<=n;j++)
-        {
-            int cur = rand()%4;
-            if(cur == 1)
-            {
-                adj[i].push_back({j,edges.size()});
-                adj[j].push_back({i,edges.size()});
-                edges.push_back({{i,j},edges.size()});
-                nontree.push_back(true);
-            }
-        }
+        cin>>x>>y;
+        adj[x].push_back({y,edges.size()});
+        adj[y].push_back({x,edges.size()});
+        edges.push_back({{x,y},edges.size()});
+        nontree.push_back(true);
     }
+    lcaStore.resize(edges.size()+1);
     parentEdgeSpanningTree.resize(edges.size()+1);
     return ;
 }
@@ -266,23 +205,18 @@ void initLowtime(int n)
                 int u = A.first.first;
                 int v = A.first.second;
                 int l = getLCA(u,v);
+                lcaStore[A.second]=l;
                 if(l==u or l==v)
                 {
                     if(depth[u]>depth[v])
                     {
                         swap(u,v);
                     }
-                    // lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
-                    // lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
                     lowTimeMin[v]=min(lowTimeMin[v],dfsorder[u]);
                     lowTimeMax[v]=max(lowTimeMax[v],dfsorder[u]);
                 }
                 else 
                 {
-                    // lowTimeMin[par[u][0]]=min(lowTimeMin[par[u][0]],dfsorder[v]);
-                    // lowTimeMax[par[u][0]]=max(lowTimeMax[par[u][0]],dfsorder[v]);
-                    // lowTimeMin[par[v][0]]=min(lowTimeMin[par[v][0]],dfsorder[u]);
-                    // lowTimeMax[par[v][0]]=max(lowTimeMax[par[v][0]],dfsorder[u]);
                     lowTimeMin[u]=min(lowTimeMin[u],dfsorder[v]);
                     lowTimeMax[u]=max(lowTimeMax[u],dfsorder[v]);
                     lowTimeMin[v]=min(lowTimeMin[v],dfsorder[u]);
@@ -292,24 +226,16 @@ void initLowtime(int n)
             }
         }
     };
-    
-    thread t1_(lambda_func_parallel,0,edges.size()/8-1);
-    thread t2_(lambda_func_parallel,edges.size()/8,2*edges.size()/8-1);
-    thread t3_(lambda_func_parallel,2*edges.size()/8,3*edges.size()/8-1);
-    thread t4_(lambda_func_parallel,3*edges.size()/8,4*edges.size()/8-1);
-    thread t5_(lambda_func_parallel,4*edges.size()/8,5*edges.size()/8-1);
-    thread t6_(lambda_func_parallel,5*edges.size()/8,6*edges.size()/8-1);
-    thread t7_(lambda_func_parallel,6*edges.size()/8,7*edges.size()/8-1);
-    thread t8_(lambda_func_parallel,7*edges.size()/8,edges.size()/8-1);
-
-    t1_.join();
-    t2_.join();
-    t3_.join();
-    t4_.join();
-    t5_.join();
-    t6_.join();
-    t7_.join();
-    t8_.join();
+    thread t[1000];
+    int nth=50;
+    for(int i=0;i<nth;i++)
+    {
+        t[i]=std::thread(lambda_func_parallel,i*edges.size()/nth,(i+1)*edges.size()/nth-1);
+    }
+    for(int i=0;i<nth;i++)
+    {
+        t[i].join();
+    }
     function<void(int)> dfsLowTime = [&](int u) 
     {
         for (auto v : tree[u]) 
@@ -328,86 +254,61 @@ void findBiconnectedComponents(int n)
 {
     UnionFind dsu;
     dsu.init(edges.size());
-    auto lambda_func_parallel = [&](int l, int r)
+    for(auto A:edges)
     {
-        for(int i=l;i<=r;i++)
+        if(nontree[A.second])   
         {
-            auto A=edges[i];
-            if(nontree[A.second])
+            int u = A.first.first;
+            int v = A.first.second;
+            // int l = getLCA(u,v);
+            int l = lcaStore[A.second];
+            if(l==u or l==v)
             {
-                // check which type of edge is this
-                // if(dfsorder[])
-                int u = A.first.first;
-                int v = A.first.second;
-                int l = getLCA(u,v);
-                if(l==u or l==v)
-                {
-                    if(l==v)
-                        swap(u,v);
-                    dsu.merge(A.second,parentEdgeSpanningTree[v]);
-                }
-                else 
-                {
-                    dsu.merge(parentEdgeSpanningTree[u],parentEdgeSpanningTree[v]);
-                    if(dfsorder[u]>dfsorder[v])
-                        dsu.merge(parentEdgeSpanningTree[u],A.second);
-                    else 
-                        dsu.merge(parentEdgeSpanningTree[v],A.second);
-                }
+                if(l==v)
+                    swap(u,v);
+                dsu.par[A.second]=dsu.get(parentEdgeSpanningTree[v]);
             }
             else 
             {
-                // merge this with parent of v
-                int u = A.first.first;
-                int v = A.first.second;
-                if(depth[u]>depth[v])
-                    swap(u,v);
-                if(depth[u]==0)
-                    continue;;
-                int w = par[u][0];
-                if(!(dfsorder[u]<=lowTimeMin[v] && lowTimeMax[v]<=dfsend[u]))
+                dsu.merge(parentEdgeSpanningTree[u],parentEdgeSpanningTree[v]);
+                if(dfsorder[u]>dfsorder[v])
                 {
-                    dsu.merge(parentEdgeSpanningTree[v],parentEdgeSpanningTree[u]);
+                    dsu.merge(parentEdgeSpanningTree[u],A.second);
+                }
+                else 
+                {
+                    dsu.merge(parentEdgeSpanningTree[v],A.second);
                 }
             }
         }
-    };
-    thread t1_(lambda_func_parallel,0,edges.size()/8-1);
-    thread t2_(lambda_func_parallel,edges.size()/8,2*edges.size()/8-1);
-    thread t3_(lambda_func_parallel,2*edges.size()/8,3*edges.size()/8-1);
-    thread t4_(lambda_func_parallel,3*edges.size()/8,4*edges.size()/8-1);
-    thread t5_(lambda_func_parallel,4*edges.size()/8,5*edges.size()/8-1);
-    thread t6_(lambda_func_parallel,5*edges.size()/8,6*edges.size()/8-1);
-    thread t7_(lambda_func_parallel,6*edges.size()/8,7*edges.size()/8-1);
-    thread t8_(lambda_func_parallel,7*edges.size()/8,edges.size()/8-1);
-
-    t1_.join();
-    t2_.join();
-    t3_.join();
-    t4_.join();
-    t5_.join();
-    t6_.join();
-    t7_.join();
-    t8_.join();
-
-    // cout<<"Biconnected Components are :\n";
-    // for(int i=0;i<edges.size();i++)
-    // {
-    //     cout<<edges[i].first.first<<" "<<edges[i].first.second<<" "<<dsu.par[edges[i].second]<<"\n";
-    // }
-    // cout<<endl;
+        else 
+        {
+            // merge this with parent of v
+            int u = A.first.first;
+            int v = A.first.second;
+            if(depth[u]>depth[v])
+                swap(u,v);
+            if(depth[u]==0)
+                continue;;
+            int w = par[u][0];
+            if(!(dfsorder[u]<=lowTimeMin[v] && lowTimeMax[v]<=dfsend[u]))
+            {
+                dsu.merge(parentEdgeSpanningTree[v],parentEdgeSpanningTree[u]);
+            }
+        }
+    }
+    for(auto A:edges)
+    {
+        cout<<" edge "<<A.first.first<<"-"<<A.first.second<<" component id "<<dsu.get(A.second)<<endl;
+    }
     return ;
 }
 
-int main()
+int main(int argc,char* argv[])
 {
-    int n=10000;
-    initmap();
+    int n;
+    cin>>n;
     generateGraph(n);
-    // for(auto A:edges)
-    // {
-    //     cout<<A.first.first<<" "<<A.first.second<<endl;
-    // }
     auto begin = std::chrono::high_resolution_clock::now();
     generateSpanningTree(n);
     dfsSpanningTree({1,0},0);
@@ -417,34 +318,23 @@ int main()
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     printf("Time measured: %.3f seconds.\n", elapsed_time.count() * 1e-9);
-    cout<<edges.size()<<endl;
-    return 0;
-    for(int i=1;i<=n;i++)
-    {
-        for(auto B:tree[i])
-        {
-            cout<< " tree edge "<<" "<<i<<" "<<B.first<<endl;
-        }
-    }
-    for(auto A:edges)
-    {
-        if(nontree[A.second])
-        {
-            cout<<A.first.first<<" non tree "<<A.first.second<<endl;
-        }
-    }
-    // for(int i=1;i<=n;i++)
-    // {
-    //     cout<<i<<" low time min "<<" "<<dfsorder[i]<<" "<<lowTimeMin[i]<<endl;
-    // }
-    
-    // for(int i=0;i<edges.size();i++)
-    // {
-    //     cout<<" nontree value " <<edges[i].first.first<<" "<<edges[i].first.second<<" "<<nontree[edges[i].second]<<endl;
-    // }
-    // for(int i=1;i<=n;i++)
-    // {
-    //     cout<<i<<" "<<parentEdgeSpanningTree[i]<<" par \n";
-    // }   
     return 0;
 }
+
+/*
+11 14
+1 2
+2 3
+3 4
+4 2
+1 3
+4 5
+5 6
+6 4
+5 11
+5 10
+6 7
+7 8
+7 9
+8 9
+*/
