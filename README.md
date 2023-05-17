@@ -25,6 +25,6 @@
        
 ## Testing
   
-    The code(modified for oj) was tested on library checker.
-    [Click for submission](https://link-url-here.org)
+    The code(modified for oj) was tested on 
+   [library checker](https://judge.yosupo.jp/submission/139721). 
 
